@@ -1,28 +1,18 @@
 const { docker, helpers } = require("@kaholo/plugin-library");
-const {
-  asyncExec,
-} = require("./helpers");
+
+const { asyncExec } = require("./helpers");
 
 async function runTrivyScan(params) {
   const {
+    command,
     workingDirectory = await helpers.analyzePath("./"),
     environmentVariables,
     secretEnvVars,
-    jsonOutput,
-    additionalArguments,
     dockerImage,
   } = params;
 
   // entrypoint of docker image already includes 'checkov'
-  const commandArgs = [];
-
-  if (additionalArguments) {
-    commandArgs.push(additionalArguments.join(" "));
-  }
-
-  if (jsonOutput) {
-    commandArgs.push("-o json");
-  }
+  const commandArgs = command;
 
   const dockerCommandBuildOptions = {
     command: `${commandArgs.join(" ")}`,

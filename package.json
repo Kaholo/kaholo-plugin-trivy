@@ -25,6 +25,7 @@
     "jest": "^27.5.0"
   },
   "dependencies": {
-    "@kaholo/plugin-library": "^2.4.0"
+    "@kaholo/plugin-library": "^2.4.0",
+    "util": "^0.12.5"
   }
 }
