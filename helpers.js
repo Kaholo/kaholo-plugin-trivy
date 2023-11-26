@@ -1,4 +1,5 @@
 const util = require("util");
+const fs = require("fs/promises");
 const childProcess = require("child_process");
 
 async function asyncExec(params) {
@@ -15,37 +16,26 @@ async function asyncExec(params) {
     throw new Error(error);
   }
 
-  const dataChunks = [];
-  const errorChunks = [];
-
   childProcessInstance.stdout.on("data", (data) => {
     onProgressFn?.(data);
-    dataChunks.push(data);
   });
   childProcessInstance.stderr.on("data", (data) => {
     onProgressFn?.(data);
-    const messagePrefix = "checkov: error: ";
-    errorChunks.push(data.split(messagePrefix)[1]);
   });
 
   try {
     await util.promisify(childProcessInstance.on.bind(childProcessInstance))("close");
-  } catch (error) {
-    const resultObj = tryParseJson(dataChunks.join(''));
-    if (error === 1 && resultObj) {
-      throw resultObj;
-    }
-    const errorObj = {
-      exit_code: error,
-      error_message: errorChunks?.join('') || "See Activity Log",
-    };
-    throw errorObj;
+  } catch {
+    throw new Error(error);
   }
 
-  const resultObj = tryParseJson(dataChunks.join());
-  if (resultObj) {
-    return resultObj;
+  if (options.jsonOutput) {
+    const resultObj = tryParseJson(await tryGetFileContent(".tmp_a3c7db29ad4.json"));
+    if (resultObj) {
+      return resultObj;
+    }  
   }
+
   return "";
 }
 
@@ -54,6 +44,14 @@ function tryParseJson(value) {
     return JSON.parse(value);
   } catch {
     return undefined;
+  }
+}
+
+async function tryGetFileContent(filePath) {
+  try {
+    return await fs.readFile(filePath, "utf8");
+  } catch (error) {
+    return `{"Error":"Failed to read content of file at ${filePath}"}`;
   }
 }
 

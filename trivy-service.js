@@ -8,6 +8,7 @@ async function runTrivyScan(params) {
     workingDirectory = await helpers.analyzePath("./"),
     environmentVariables,
     secretEnvVars,
+    jsonOutput,
     dockerImage,
   } = params;
 
@@ -15,6 +16,14 @@ async function runTrivyScan(params) {
   const commandArgs = command;
   if (commandArgs[0].substring(0,6)==="trivy "){
     commandArgs[0] = commandArgs[0].slice(6); 
+  }
+
+  if (jsonOutput) {
+    if (commandArgs.join(" ").includes("-f json")){
+      throw new Error("Please disable \"Use JSON Output\" parameter when explicitly adding \"-f json\" to the command.");
+    }
+    // this file will land in WorkingDirectory whether specified or not.
+    commandArgs.push("-f json -o .tmp_a3c7db29ad4.json");
   }
 
   const dockerCommandBuildOptions = {
@@ -44,6 +53,7 @@ async function runTrivyScan(params) {
     command: dockerCommand,
     options: {
       env: dockerEnvVars,
+      jsonOutput,
     },
     onProgressFn: process.stdout.write.bind(process.stdout),
   });
