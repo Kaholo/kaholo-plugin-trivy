@@ -1,85 +1,61 @@
-# Kaholo SystemXYZ Plugin
-This plugin integrates ACME, inc. SystemXYZ with Kaholo, providing access to SystemXYZ's alerting functionality, for example sending a Ex message or setting an Zed alarm to notify someone of the results of a Kaholo Pipeline Action. For triggering Kaholo Pipelines from SystemXYZ, please see the Kaholo [SystemXYZ trigger](https://github.com/Kaholo/kaholo-trigger-systemxyz) instead.
+# Kaholo Trivy Plugin
+Trivy is an all-in-one open source security scanner. Trivy is reliable, fast, and easy to use. Use Trivy to find vulnerabilities & IaC misconfigurations, SBOM discovery, Cloud scanning, Kubernetes security risks,and more.
 
-## Prerequisites
-This plugin works with SystemXYZ version 4.0 and later, both SaaS platform and locally hosted versions.
+# Use of Docker
+The plugin makes use of a docker image to run Trivy commands on the Kaholo agent. If files on the agent are used in the command, be sure to either specify Working Directory or leave it unspecified to use the agent's default working directory, and in the command if paths are needed, use paths relative to the Working Directory. For example if Working Directory is unspecified and defaults to `/twiddlebug/workspace`, and an output file is wanted in `/twiddlebug/workspace/results/trivyscan.txt`, in the command use `-o results/trivyscan.txt`. This is necessary because the working directory is mounted in the docker container running the command so the absolute path is unlikely to be valid within the container. However, working directory is mounted as a docker volume when running the command so a relative path will work.
 
-The following SystemXYZ APIs must be enabled for 3rd party access in the SystemXYZ Platform. The Kaholo plugin's service ID string is "kaholo-plugin-da2de162". SystemXYZ does not support 3rd party access to the Wy API so there are no Wy controller methods in the plugin.
+Also the docker image used is by default the one with which the plugin was most recently developed and tested, e.g. `aquasec/trivy:0.47.0`. To use another version or a custom docker image please specify in parameter Docker Image. To change this default, modify "default" in param "dockerImage" of method "runTrivyScan" in file `config.json`, repackage the zip file, and re-install the plugin. Further details can be found in INSTALL.md.
 
->**SystemXYZ Ex API**
->
->**SystemXYZ Zed API**
+## Method: Run Trivy Scan
+This method runs any trivy command in a docker container. All parameters other than "Trivy Command" are optional.
 
-The SystemXYZ connectivity package must be installed on Kaholo agents. A `Test API` method is provided in the plugin. Check Parameter "Install API" in order to automatically install the SystemXYZ connectivity package. Alternatively, ask your Kaholo administrator to follow the [installation instructions](https://www.systemxyz.com.nz/install_connectivity_package/v4) on the SystemXYZ webite.
+### Parameter: Trivy Command
+This is the command the scan will run. Trivy runs a wide assortment of scans so the possibilities are many, but for example:
 
-## Access and Authentication
-The plugin accesses SystemXYZ using the same URL as the web console, e.g. https://your-account.systemxyz.com.nz/. However, authentication with user/password is not permitted for automated processes.
+    trivy image python:3.4-alpine
 
-Instead the plugin uses SystemXYZ service tokens to authenticate. A SystemXYZ service token is a string that begins `XYZ-`, for example `XYZ-9ef6df656f9db28d4feaac0c0c6855bc`.  To get an appropriate service token, ask your SystemXYZ administrator for one that has permissions for the following actions:
-* ex-send
-* ex-send-email (only if email feature is used)
-* zed-readgroups
-* zed-triggergroups
-* xyz-vieworg
-* xyz-viewalarms
+This command runs trivy to scan the image `python:3.4.-alpine`, which would be found in Docker Hub, scanning for both vulnerability and secrets by default. To specify only the vulnerability scan, the command would be:
 
-You will also what to specify which Zed groups you will access, or alternately if the service token is granted `zed-any`, the plugin will be able to read and trigger all SystemXYZ groups.
+    trivy image --scanners vuln alpine python:3.4-alpine
 
-You may have more than one service token, these are vaulted in the Kaholo Vault. The service token is needed for Parameter "XYZ Service Token" as described below.
+or
 
-## Plugin Installation
-For download, installation, upgrade, downgrade and troubleshooting of plugins in general, see [INSTALL.md](./INSTALL.md).
+    trivy image alpine python:3.4-alpine --scanners vuln
 
-## Plugin Settings
-Plugin settings act as default parameter values. If configured in plugin settings, the action parameters may be left unconfigured. Action parameters configured anyway over-ride the plugin-level settings for that Action.
-* Default XYZ Endpoint - The URL of your SystemXYZ installation, e.g. `https://your-account.systemxyz.com.nz/`
-* Default Zed Alarm Group - The Zed Alarm Group to use with Zed alarm methods, e.g. `zed-group-one`. Not used for Ex message-related methods.
-* Default Service Token (Vault) - The service token, stored in the Kaholo vault for authentication and access. e.g. `XYZ-9ef6df656f9db28d4feaac0c0c6855bc`
+The use of the command string `trivy` at the beginning of the command is optional. The command will work the same with or without the initial `trivy`. With each run the command actually used is recorded in the Activity Log of that Kaholo execution.
 
-## Pipelining Alarm Messaging
-A common use case for this plugin is to prototype Wy controller notifications by catching Zed Hooks, applying logic, and sending Ex messages as appropriate. To do this the following steps are needed:
-1. Install and configure the Kaholo [SystemXYZ trigger](https://github.com/Kaholo/kaholo-trigger-systemxyz) to be activated by a [SystemXYZ Zed Hook](https://www.systemxyz.com.nz/zed_hooks/v4).
-1. Use the trigger to start your prototype Kaholo pipeline.
-1. Use method Read Zed Alarms to collect the active alarm list and details.
-1. Apply your logic using the Kaholo Code page and/or Kaholo Conditional Code.
-1. Use method Send Ex Message if your logic determines it appropriate.
+### Parameter: Working Directory
+Especially when working with a file system - e.g., using input or output files, or scanning a file system or repository cloned onto the Kaholo agent, the Working Directory is important. Because the Trivy command is executed inside a docker container, the Working Directory is docker mounted as a volume so that Trivy will have access to the file system. If using a Trivy command that leaves a file outside of the Working Directory, e.g. `trivy image apline -o \tmp\alpine_report.txt`, the file will be unavailable and get destroyed as soon as the command completes. For this reason always use relative paths in Trivy commands, e.g. `trivy image alpine -o reports\alpine_report.txt`.
 
-## Method: Test API
-This method does a trivial test of the SystemXYZ connectivity package installed on the Kaholo agent, in order to validate that it is installed correctly and can network connect to the XYZ Endpoint. It returns only the version number of the SystemXYZ system and does not require a service token.
+If all the files involved are inside the default working directory, then the parameter may be left unspecified and the default working directory will be used. On a basic Kaholo Agent that is `/twiddlebug/workspace`. If all actions use only relative paths and the default working directory, it won't matter where exactly the default working directory is.
 
-### Parameters
-Required parameters have an asterisk (*) next to their names.
-* XYZ Endpoint * - as described above in [plugin settings](#plugin-settings)
-* Install API (checkbox) - if checked and the connectivity package is not found on the agent, the plugin will attempt to automatically install it.
+### Parameter: Environment Variables
+Some Trivy commands may require special information that is handled using Environment Variables. For example if scanning an image from a private Nexus repository that listens on HTTP (port 80), the following variables may be needed:
 
-## Method: Send Ex Message
-This method composes an Ex Message to send to SystemXYZ users and/or groups. Message bodies may be in JSON, MD, HTML, or plain text format. Malformed JSON, MD, or HTML results in a plain text message. Combinations of users and groups are permitted. Users listed who are also group members or member in more than one group get the message only once.
+    TRIVY_USERNAME=kaholo
+    TRIVY_NON_SSL=true
 
-> NOTE: Parameters left unconfigured get "Kaholo" by default, including message body and title. If parameter `Email` is selected, parameter `From` must be a valid user name or it will be rejected by SystemXYZ with `HTTP 404 - Page not found`. This also requires the service token have the special permission `ex-send-email`, otherwise you get the same HTTP 404 error.
+### Parameter: Secret Environment Variables
+For environment variables that Trivy will need but that should not be exposed in the UI, error messages, or logs, use this parameter. The list of variables is the same as for regular Environment Variables, however they are entered into a Kaholo Vault item that is then specified for this parameter. For example a vault item named "Vars Nexus Trivy Login" might be created containing:
 
-### Parameters
-Required parameters have an asterisk (*) next to their names.
-* XYZ Endpoint * - as described above in [plugin settings](#plugin-settings)
-* Service Token * - as described above in [plugin settings](#plugin-settings)
-* Message Title - plain text one-line title of the message
-* Message Body - the body of the message in JSON, MD, HTML, or plain text format
-* Recipients * - the list of recipients, either usernames or group names, one per line
-* From - indicates the source of the message, either a valid user name or arbitrary text string
-* Email - if checked and SystemXYZ is linked to an email system, the message is sent out as an email instead of a SystemXYZ Ex message.
+    TRIVY_USERNAME=kaholo
+    TRIVY_NON_SSL=true
+    TRIVY_PASSWORD=2r98yhr3dq398w!
 
-## Method: Read Zed Alarms
-This method reads a Zed Alarm group from SystemXYZ whether or not any of the alarms are active. It is commonly used with the Kaholo [SystemXYZ trigger](https://github.com/Kaholo/kaholo-trigger-systemxyz) and [SystemXYZ Zed Hooks](https://www.systemxyz.com.nz/zed_hooks/v4). The trigger provides the timely response to an alarm, while this method provides the details of the alarm.
+And then in parameter "Secret Environment Variables" select "Vars Nexus Trivy Login" from the vault.
 
-If parameter `Zed Hook Code` is configured, the details on the triggering alarm are provided. If parameter `Alarm Group` is provided the details on all alarms (active or not) are provided. If both are configured, details on both are provided, even if the code refers to an alarm not in that group. This is useful in overcoming cross-group limitations in SystemXYZ alarms.
+### Parameter: Use JSON Output
+This parameter, when selected, adds `-f json -o .tmp_a3c7db29ad4.json` to the command. This instructs Trivy to output JSON to a file named .tmp_a3c7db29ad4.json in the Working Directory. The file name is arbitrarily complex to avoid conflict with other files. If the file already exists it is overwritten.
 
-The Final Result in Kaholo is a JSON document of the same format as the equivalent [SystemXYZ Alarm Export](https://www.systemxyz.com.nz/alarm_export/v4).
+When the command completes, Kaholo then parses the file and if JSON output is found it is returned as the Kaholo action's Final Result. The file is then deleted. This is a convenience to both easily get a Final Result and to put it in a form that is accessible in code by downstream actions in the pipeline. For example, the code:
 
-### Parameters
-Required parameters have an asterisk (*) next to their names.
-* XYZ Endpoint * - as described above in [plugin settings](#plugin-settings)
-* Service Token * - as described above in [plugin settings](#plugin-settings)
-* Zed Hook Code - a code string from Zed Hooks, e.g. `zed-20220329aad`
-* Zed Alarm Group - a Zed alarm group, e.g. `zed-group-one`
+    kaholo.actions.trivy1.result.Results[0].Vulnerabilities.length
 
-## Method: Set Zed Alarm
-This method is not yet implemented. If you are interested in setting Zed alarms from Kaholo, please let us know! support@kaholo.io.
+may provide downstream actions in the pipeline a count of how many vulnerabilities Kaholo Action `trivy1` found when scanning an image.
+
+If enabling this parameter do NOT also specify `-f json` in parameter "Trivy Command". Specifying additional `-o` in the command is allowed but may produce confusing results. If wishing to specify `-f` or `-o` in the command, please disable parameter "Use JSON Output". The Text Editor Plugin and File System plugins may be useful for reading or handling output files generated directly by the command.
+
+### Parameter: Docker Image
+Because the `trivy` command is run inside a docker container, some docker image must be specified. By default the plugin will use a Docker Hub image `aquasec/trivy`, a version that was used to develop and test the plugin. To get the latest version or use a custom docker image just specify in this parameter, for example `aquasec/trivy:latest`.
+
+With each run of an action the docker image actually used is recorded in the Kaholo Activity Log of that execution.
