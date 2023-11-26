@@ -53,7 +53,7 @@ When the command completes, Kaholo then parses the file and if JSON output is fo
 
 may provide downstream actions in the pipeline a count of how many vulnerabilities Kaholo Action `trivy1` found when scanning an image.
 
-If enabling this parameter do NOT also specify `-f json` in parameter "Trivy Command". Specifying additional `-o` in the command is allowed but may produce confusing results. If wishing to specify `-f` or `-o` in the command, please disable parameter "Use JSON Output". The Text Editor Plugin and File System plugins may be useful for reading or handling output files generated directly by the command.
+If enabling this parameter do NOT also specify `-f json` in parameter "Trivy Command". Specifying additional `-o` in the command is allowed but may produce confusing results. If wishing to specify `-f` or `-o` in the command, please disable parameter "Use JSON Output". The JSON Plugin, Text Editor Plugin and File System Plugin may be useful for reading or handling output files generated directly by the command.
 
 ### Parameter: Docker Image
 Because the `trivy` command is run inside a docker container, some docker image must be specified. By default the plugin will use a Docker Hub image `aquasec/trivy`, a version that was used to develop and test the plugin. To get the latest version or use a custom docker image just specify in this parameter, for example `aquasec/trivy:latest`.
