@@ -1,62 +1,96 @@
 {
-  "name": "kaholo-plugin-template",
-  "viewName": "Kaholo Template Plugin",
+  "name": "trivy",
+  "viewName": "Trivy",
   "type": "executer",
   "main": "app.js",
   "execProgram": "node",
   "exposeRoute": false,
   "imgUrl": "logo.png",
-  "version": "2.0.0",
-  "description": "This plugin is only a generic template.",
+  "version": "1.0.0",
+  "description": "Scan for various vulnerabilities & IaC misconfigurations",
   "category": [
-    "Basic Tools"
+    "CI/CD"
   ],
   "keywords": [
-    "template",
-    "plugin",
-    "kaholo",
-    "hello"
+    "trivy",
+    "scanner",
+    "vulnerabilities",
+    "misconfiguration",
+    "images",
+    "containers",
+    "repository",
+    "virtual",
+    "kubernetes",
+    "packages",
+    "dependencies",
+    "sboms",
+    "cves",
+    "secrets",
+    "IaC"
    ],
-  "settings": [
+   "methods": [
     {
-      "name": "helloName",
-      "viewName": "Default Hello Name",
-      "type": "string",
-      "description": "The person to whom to say hello by default",
-      "learnUrl": "https://docs.apify.com/api/v2#/introduction/authentication"
-    }
-  ],
-  "methods": [
-    {
-      "name": "hello",
-      "viewName": "Say hello",
+      "name": "runTrivyScan",
+      "viewName": "Run Trivy Scan",
+      "allowEmptyResult": true,
       "params": [
         {
-          "name": "helloName",
-          "viewName": "Hello Name",
+          "name": "command",
+          "viewName": "Trivy Command",
+          "description": "The Trivy command to execute",
+          "type": "text",
+          "parserType": "array",
+          "placeholder": "trivy repo $GITHUB_URL",
+          "required": true,
+          "learnUrl": "https://aquasecurity.github.io/trivy/v0.47/docs/"
+        },
+        {
+          "name": "workingDirectory",
+          "viewName": "Working Directory",
+          "description": "Optional directory on the Kaholo agent containing files needed for the scan, either absolute or relative path",
           "type": "string",
+          "parserType": "filePath",
+          "parserOptions": {
+            "throwIfDoesntExist": true,
+            "acceptedTypes": [
+              "directory"
+            ]
+          },
           "required": false,
-          "placeholder": "World",
-          "default": "World",
-          "description": "The person to whom to say hello",
-          "learnUrl": "https://en.wikipedia.org/wiki/%22Hello,_World!%22_program"
+          "placeholder": "infra-asiapac/terraform"
         },
         {
-          "name": "secret",
-          "viewName": "Secret",
+          "name": "environmentVariables",
+          "viewName": "Environment Variables",
+          "description": "one-per-line Key=Value pairs, to be set as environment variables in Trivy's environment",
+          "placeholder": "FS_SCANNERS=config,license\nGITHUB_URL=https://github.com/Kaholo/kaholo-ansible.git",
+          "type": "text",
+          "parserType": "keyValuePairs",
+          "learnUrl": "https://docs.cypress.io/guides/guides/environment-variables"
+        },
+        {
+          "name": "secretEnvVars",
+          "viewName": "Secret Environment Variables",
           "type": "vault",
-          "required": false,
-          "description": "A secret we might also say.",
-          "learnUrl": "https://en.wikipedia.org/wiki/%22Hello,_World!%22_program"
+          "parserType": "keyValuePairs",
+          "description": "One-per-line Key=Value pairs stored as a Kaholo Vault item, to be set as environment variables in Checkov's environment",
+          "placeholder": "(vaulted) GITHUB_TOKEN=ghp_DZydfw3ADxSCKt3sY1Rgiehczaeiyef0vPlmw"
         },
         {
-          "name": "saySecret",
-          "viewName": "Say secret",
+          "name": "jsonOutput",
+          "viewName": "Use JSON Output",
+          "description": "Return Final Result in JSON format (-f json).",
           "type": "boolean",
-          "required": false,
-          "default": false,
-          "description": "If checked we'll also say the secret.",
-          "learnUrl": "https://en.wikipedia.org/wiki/%22Hello,_World!%22_program"
+          "default": true
+        },
+        {
+          "name": "dockerImage",
+          "viewName": "Docker Image",
+          "type": "string",
+          "description": "Specify which Trivy docker repo/image:tag to use.",
+          "placeholder": "aquasec/trivy:0.47.0", 
+          "default": "aquasec/trivy:0.47.0",
+          "required": true
         }
       ]
     }
