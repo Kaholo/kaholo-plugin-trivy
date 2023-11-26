@@ -14,12 +14,12 @@ async function runTrivyScan(params) {
 
   // entrypoint of docker image already includes 'checkov'
   const commandArgs = command;
-  if (commandArgs[0].substring(0,6)==="trivy "){
-    commandArgs[0] = commandArgs[0].slice(6); 
+  if (commandArgs[0].substring(0, 6) === "trivy ") {
+    commandArgs[0] = commandArgs[0].slice(6);
   }
 
   if (jsonOutput) {
-    if (commandArgs.join(" ").includes("-f json")){
+    if (commandArgs.join(" ").includes("-f json")) {
       throw new Error("Please disable \"Use JSON Output\" parameter when explicitly adding \"-f json\" to the command.");
     }
     // this file will land in WorkingDirectory whether specified or not.
