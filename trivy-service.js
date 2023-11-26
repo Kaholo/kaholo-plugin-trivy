@@ -13,6 +13,9 @@ async function runTrivyScan(params) {
 
   // entrypoint of docker image already includes 'checkov'
   const commandArgs = command;
+  if (commandArgs[0].substring(0,6)==="trivy "){
+    commandArgs[0] = commandArgs[0].slice(6); 
+  }
 
   const dockerCommandBuildOptions = {
     command: `${commandArgs.join(" ")}`,
