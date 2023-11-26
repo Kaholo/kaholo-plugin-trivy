@@ -25,8 +25,9 @@ async function asyncExec(params) {
 
   try {
     await util.promisify(childProcessInstance.on.bind(childProcessInstance))("close");
-  } catch {
-    throw new Error(error);
+  } catch (error) {
+    // useful error message appears in Activity Log, this error is just "1".
+    throw "";
   }
 
   if (options.jsonOutput) {
